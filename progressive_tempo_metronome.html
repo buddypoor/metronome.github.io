@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Progressive Tempo Metronome</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111827;
+            color: #f9fafb;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 30px;
+            background: #1f2937;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 0;
+            font-size: 26px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #d1d5db;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #4b5563;
+            border-radius: 8px;
+            background: #111827;
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #60a5fa;
+        }
+
+        .tempo-display {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .bpm {
+            font-size: 64px;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        .bpm-label {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .beat-indicator {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: #374151;
+            margin: 25px auto;
+            transition: background 0.05s;
+        }
+
+        .beat-indicator.active {
+            background: #60a5fa;
+            box-shadow: 0 0 25px rgba(96, 165, 250, 0.6);
+        }
+
+        .status {
+            text-align: center;
+            color: #d1d5db;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .progress-section {
+            margin-top: 25px;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            color: #9ca3af;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #374151;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #60a5fa;
+            transition: width 0.1s linear;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #startButton {
+            background: #60a5fa;
+            color: #111827;
+        }
+
+        #stopButton {
+            background: #374151;
+            color: white;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .error {
+            color: #f87171;
+            font-size: 13px;
+            margin-top: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Progressive Metronome</h1>
+
+    <p class="subtitle">
+        Gradually increase your tempo as you practise.
+    </p>
+
+    <div class="input-group">
+        <label for="startBpm">Starting Tempo (BPM)</label>
+        <input
+            type="number"
+            id="startBpm"
+            value="60"
+            min="20"
+            max="300"
+        >
+    </div>
+
+    <div class="input-group">
+        <label for="endBpm">Ending Tempo (BPM)</label>
+        <input
+            type="number"
+            id="endBpm"
+            value="120"
+            min="20"
+            max="300"
+        >
+    </div>
+
+    <div class="input-group">
+        <label for="duration">Duration at Each Tempo (seconds)</label>
+        <input
+            type="number"
+            id="duration"
+            value="300"
+            min="1"
+            step="1"
+        >
+    </div>
+
+    <div class="tempo-display">
+        <div class="bpm" id="currentBpm">60</div>
+        <div class="bpm-label">BEATS PER MINUTE</div>
+
+        <div class="beat-indicator" id="beatIndicator"></div>
+
+        <div class="status" id="status">
+            Ready to start
+        </div>
+    </div>
+
+    <div class="progress-section">
+
+        <div class="progress-labels">
+            <span id="timeElapsed">00:00</span>
+            <span id="timeRemaining">65:00 remaining</span>
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <p class="status" id="nextTempo">
+            Next tempo: 65 BPM
+        </p>
+
+    </div>
+
+    <div class="buttons">
+        <button id="startButton">Start</button>
+        <button id="pauseButton" disabled>Pause</button>
+        <button id="stopButton" disabled>Stop</button>
+    </div>
+
+    <div class="error" id="errorMessage"></div>
+
+</div>
+
+<script>
+    // DOM elements
+    const startBpmInput = document.getElementById("startBpm");
+    const endBpmInput = document.getElementById("endBpm");
+    const durationInput = document.getElementById("duration");
+
+    const currentBpmDisplay = document.getElementById("currentBpm");
+    const beatIndicator = document.getElementById("beatIndicator");
+    const statusDisplay = document.getElementById("status");
+
+    const timeElapsedDisplay = document.getElementById("timeElapsed");
+    const timeRemainingDisplay = document.getElementById("timeRemaining");
+    const progressFill = document.getElementById("progressFill");
+    const nextTempoDisplay = document.getElementById("nextTempo");
+
+    const startButton = document.getElementById("startButton");
+    const pauseButton = document.getElementById("pauseButton");
+    const stopButton = document.getElementById("stopButton");
+    const errorMessage = document.getElementById("errorMessage");
+
+
+    // Audio and session state
+    let audioContext = null;
+    let schedulerTimer = null;
+    let displayTimer = null;
+
+    let isRunning = false;
+    let isPaused = false;
+    let sessionStartTime = 0;
+    let sessionEndTime = 0;
+    let nextBeatTime = 0;
+
+    let startBpm = 60;
+    let endBpm = 120;
+    let durationPerTempo = 300;
+    let totalDuration = 0;
+
+
+    // Schedule beats slightly ahead of playback time.
+    // This helps maintain accurate timing despite browser timer delays.
+    const LOOKAHEAD_SECONDS = 0.1;
+    const SCHEDULER_INTERVAL_MS = 25;
+
+
+    // Convert seconds to MM:SS or HH:MM:SS.
+    function formatTime(seconds) {
+        seconds = Math.max(0, Math.floor(seconds));
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (hours > 0) {
+            return (
+                String(hours).padStart(2, "0") + ":" +
+                String(minutes).padStart(2, "0") + ":" +
+                String(secs).padStart(2, "0")
+            );
+        }
+
+        return (
+            String(minutes).padStart(2, "0") + ":" +
+            String(secs).padStart(2, "0")
+        );
+    }
+
+
+    // Calculate which tempo applies at a given point in the session.
+    function getTempoAtTime(elapsedSeconds) {
+        const tempoIndex = Math.floor(
+            elapsedSeconds / durationPerTempo
+        );
+
+        return Math.min(
+            startBpm + tempoIndex * 5,
+            endBpm
+        );
+    }
+
+
+    // Generate a short click using the Web Audio API.
+    function scheduleClick(time) {
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        oscillator.type = "sawtooth";
+        oscillator.frequency.value = 1000;
+
+        gain.gain.setValueAtTime(0.0001, time);
+        gain.gain.exponentialRampToValueAtTime(0.8, time + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.035);
+
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+
+        oscillator.start(time);
+        oscillator.stop(time + 0.04);
+
+        // Animate the indicator when the beat is played.
+        const delay = Math.max(
+            0,
+            (time - audioContext.currentTime) * 1000
+        );
+
+        setTimeout(() => {
+            if (!isRunning || isPaused) return;
+
+            beatIndicator.classList.add("active");
+
+            setTimeout(() => {
+                beatIndicator.classList.remove("active");
+            }, 70);
+
+        }, delay);
+    }
+
+
+    // Main audio scheduler.
+    function scheduler() {
+        if (!isRunning) return;
+
+        const now = audioContext.currentTime;
+
+        // Stop scheduling beats once the session has ended.
+        if (now >= sessionEndTime) {
+            stopMetronome(true);
+            return;
+        }
+
+        // Schedule upcoming beats in advance.
+        while (nextBeatTime < now + LOOKAHEAD_SECONDS) {
+
+            if (nextBeatTime >= sessionEndTime) {
+                break;
+            }
+
+            const elapsed = nextBeatTime - sessionStartTime;
+
+            const bpm = getTempoAtTime(
+                Math.max(0, elapsed)
+            );
+
+            scheduleClick(nextBeatTime);
+
+            // Calculate the next beat using the current tempo.
+            nextBeatTime += 60 / bpm;
+        }
+    }
+
+
+    // Update the visual interface.
+    function updateDisplay() {
+        if (!isRunning) return;
+
+        const elapsed = Math.max(
+            0,
+            audioContext.currentTime - sessionStartTime
+        );
+
+        if (elapsed >= totalDuration) {
+            stopMetronome(true);
+            return;
+        }
+
+        const remaining = totalDuration - elapsed;
+
+        const bpm = getTempoAtTime(elapsed);
+
+        currentBpmDisplay.textContent = bpm;
+
+        timeElapsedDisplay.textContent = formatTime(elapsed);
+
+        timeRemainingDisplay.textContent =
+            formatTime(remaining) + " remaining";
+
+        const progress = (elapsed / totalDuration) * 100;
+
+        progressFill.style.width = progress + "%";
+
+        const nextChangeIndex =
+            Math.floor(elapsed / durationPerTempo) + 1;
+
+        const nextChangeTime =
+            nextChangeIndex * durationPerTempo;
+
+        const secondsUntilChange = Math.max(
+            0,
+            nextChangeTime - elapsed
+        );
+
+        if (bpm < endBpm) {
+            nextTempoDisplay.textContent =
+                "Next tempo: " + (bpm + 5) +
+                " BPM in " + formatTime(secondsUntilChange);
+        } else {
+            nextTempoDisplay.textContent =
+                "Final tempo — session ends in " +
+                formatTime(remaining);
+        }
+
+        statusDisplay.textContent = "Metronome running";
+    }
+
+
+    // Validate inputs and start the session.
+    async function startMetronome() {
+        if (isRunning) return;
+
+        startBpm = Number(startBpmInput.value);
+        endBpm = Number(endBpmInput.value);
+        durationPerTempo = Number(durationInput.value);
+
+        errorMessage.textContent = "";
+
+        // Validate BPM values.
+        if (
+            !Number.isInteger(startBpm) ||
+            !Number.isInteger(endBpm) ||
+            startBpm < 20 ||
+            endBpm > 300 ||
+            startBpm > endBpm
+        ) {
+            errorMessage.textContent =
+                "Enter valid tempos between 20 and 300 BPM, " +
+                "with the starting tempo no greater than the ending tempo.";
+            return;
+        }
+
+        // A 5 BPM increment must land exactly on the ending tempo.
+        if ((endBpm - startBpm) % 5 !== 0) {
+            errorMessage.textContent =
+                "The difference between the starting and ending " +
+                "tempos must be divisible by 5.";
+            return;
+        }
+
+        if (
+            !Number.isFinite(durationPerTempo) ||
+            !Number.isInteger(durationPerTempo) ||
+            durationPerTempo < 1
+        ) {
+            errorMessage.textContent =
+                "Duration must be a positive whole number of seconds.";
+            return;
+        }
+
+        // Calculate the total session length.
+        const numberOfTempoLevels =
+            (endBpm - startBpm) / 5 + 1;
+
+        totalDuration =
+            numberOfTempoLevels * durationPerTempo;
+
+        try {
+            if (!audioContext || audioContext.state === "closed") {
+                audioContext = new AudioContext();
+            }
+
+            await audioContext.resume();
+
+            if (audioContext.state !== "running") {
+                throw new Error("Audio could not be started.");
+            }
+
+        } catch (error) {
+            errorMessage.textContent =
+                "Unable to start audio. Please check your browser settings.";
+            return;
+        }
+
+        // Establish the session timeline.
+        const startDelay = 0.1;
+
+        sessionStartTime =
+            audioContext.currentTime + startDelay;
+
+        sessionEndTime =
+            sessionStartTime + totalDuration;
+
+        nextBeatTime = sessionStartTime;
+
+        isRunning = true;
+        isPaused = false;
+
+        startButton.disabled = true;
+        pauseButton.disabled = false;
+        pauseButton.textContent = "Pause";
+        stopButton.disabled = false;
+
+        startBpmInput.disabled = true;
+        endBpmInput.disabled = true;
+        durationInput.disabled = true;
+
+        statusDisplay.textContent = "Starting...";
+
+        // Start scheduling and updating the display.
+        schedulerTimer = setInterval(
+            scheduler,
+            SCHEDULER_INTERVAL_MS
+        );
+
+        displayTimer = setInterval(
+            updateDisplay,
+            100
+        );
+
+        scheduler();
+        updateDisplay();
+    }
+
+
+
+    // Pause or resume the current session without resetting its position.
+    async function togglePause() {
+        if (!isRunning || !audioContext) return;
+
+        if (!isPaused) {
+            try {
+                await audioContext.suspend();
+
+                // The audio clock is now frozen, so the session timer,
+                // tempo progression, and scheduled audio all pause together.
+                isPaused = true;
+
+                clearInterval(schedulerTimer);
+                clearInterval(displayTimer);
+
+                schedulerTimer = null;
+                displayTimer = null;
+
+                pauseButton.textContent = "Resume";
+                statusDisplay.textContent = "Paused";
+                beatIndicator.classList.remove("active");
+            } catch (error) {
+                errorMessage.textContent = "Unable to pause audio.";
+            }
+        } else {
+            try {
+                await audioContext.resume();
+
+                if (!isRunning) return;
+
+                isPaused = false;
+
+                pauseButton.textContent = "Pause";
+                statusDisplay.textContent = "Metronome running";
+
+                schedulerTimer = setInterval(
+                    scheduler,
+                    SCHEDULER_INTERVAL_MS
+                );
+
+                displayTimer = setInterval(
+                    updateDisplay,
+                    100
+                );
+
+                scheduler();
+                updateDisplay();
+            } catch (error) {
+                statusDisplay.textContent = "Unable to resume audio";
+            }
+        }
+    }
+
+
+    // Stop the session.
+    function stopMetronome(completed = false) {
+        if (!isRunning) return;
+
+        isRunning = false;
+        isPaused = false;
+
+        clearInterval(schedulerTimer);
+        clearInterval(displayTimer);
+
+        schedulerTimer = null;
+        displayTimer = null;
+
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        pauseButton.textContent = "Pause";
+        stopButton.disabled = true;
+
+        startBpmInput.disabled = false;
+        endBpmInput.disabled = false;
+        durationInput.disabled = false;
+
+        beatIndicator.classList.remove("active");
+
+        // Close the old audio context so queued clicks cannot play after Stop.
+        if (audioContext) {
+            const contextToClose = audioContext;
+            audioContext = null;
+            contextToClose.close().catch(() => {});
+        }
+
+        if (completed) {
+            currentBpmDisplay.textContent = endBpm;
+            timeElapsedDisplay.textContent =
+                formatTime(totalDuration);
+
+            timeRemainingDisplay.textContent = "00:00 remaining";
+
+            progressFill.style.width = "100%";
+
+            statusDisplay.textContent = "Session complete!";
+
+            nextTempoDisplay.textContent =
+                "You reached " + endBpm + " BPM.";
+        } else {
+            statusDisplay.textContent = "Session stopped";
+
+            // Update the display to show the current session position.
+            if (audioContext) {
+                const elapsed = Math.max(
+                    0,
+                    Math.min(
+                        totalDuration,
+                        audioContext.currentTime - sessionStartTime
+                    )
+                );
+
+                currentBpmDisplay.textContent =
+                    getTempoAtTime(elapsed);
+
+                timeElapsedDisplay.textContent =
+                    formatTime(elapsed);
+
+                timeRemainingDisplay.textContent =
+                    formatTime(totalDuration - elapsed) +
+                    " remaining";
+
+                progressFill.style.width =
+                    (elapsed / totalDuration * 100) + "%";
+            }
+        }
+    }
+
+
+    // Button handlers.
+    startButton.addEventListener("click", startMetronome);
+
+    pauseButton.addEventListener("click", togglePause);
+
+    stopButton.addEventListener("click", () => {
+        stopMetronome(false);
+    });
+
+
+    // Show a sensible estimated duration before starting.
+    function updateInitialEstimate() {
+        if (isRunning) return;
+
+        const start = Number(startBpmInput.value);
+        const end = Number(endBpmInput.value);
+        const duration = Number(durationInput.value);
+
+        if (
+            Number.isInteger(start) &&
+            Number.isInteger(end) &&
+            start >= 20 &&
+            end <= 300 &&
+            start <= end &&
+            (end - start) % 5 === 0 &&
+            Number.isInteger(duration) &&
+            duration > 0
+        ) {
+            const levels = (end - start) / 5 + 1;
+            const total = levels * duration;
+
+            timeElapsedDisplay.textContent = "00:00";
+
+            timeRemainingDisplay.textContent =
+                formatTime(total) + " remaining";
+
+            currentBpmDisplay.textContent = start;
+
+            progressFill.style.width = "0%";
+
+            nextTempoDisplay.textContent =
+                start === end
+                    ? "Single tempo session"
+                    : "Next tempo: " + (start + 5) + " BPM";
+        }
+    }
+
+    startBpmInput.addEventListener("input", updateInitialEstimate);
+    endBpmInput.addEventListener("input", updateInitialEstimate);
+    durationInput.addEventListener("input", updateInitialEstimate);
+
+    updateInitialEstimate();
+</script>
+
+</body>
+</html>
